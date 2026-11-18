@@ -66,8 +66,8 @@ function AccessibilityNotes({
     focusLines = ['Start a study session', 'Edit name', 'Accessibility and prototype notes'];
     labels = ['“Start a study session”', '“Edit name”', '“Accessibility and prototype notes, open”'];
   } else if (screen === 'session') {
-    focusLines = ['Live captions and accessibility notes', ...(sessionState === 'Thinking' ? [] : ['Voice action']), 'Page camera preview', 'Add notes', 'End'];
-    labels = ['“Live captions and accessibility notes, open”', `“Voice action, ${sessionState === 'Listening' ? 'start listening' : sessionState === 'Thinking' ? 'thinking' : 'simulate response'}”`, '“Page camera preview, open camera coaching”', '“Add notes”', '“End study session”'];
+    focusLines = ['Live captions and accessibility notes', ...(sessionState === 'Listening' ? ['Circular microphone button'] : []), 'Page camera preview', 'Add notes', 'End'];
+    labels = ['“Live captions and accessibility notes, open”', ...(sessionState === 'Listening' ? ['“Speak to Iris. Simulate a voice question”'] : []), '“Page camera preview, open camera coaching”', '“Add notes”', '“End study session”'];
   } else if (screen === 'camera') {
     const cameraActions = cameraStep === 'align'
       ? ['Page is aligned']
@@ -112,7 +112,7 @@ function AccessibilityNotes({
       </section>
       <section className="iris-handoff-section">
         <h3>Contrast and type</h3>
-        <p>Near-white on near-black; #FFD400 on black; black on yellow. Contrast figures are visual targets, not a complete audit. Base body 19px, session state 36px, display 43–59px. Touch targets are at least 64px; Start is 410px. Large text uses 28px body copy with reflow and scrolling.</p>
+        <p>White and pale pink on deep navy; deep navy on pink actions. Contrast figures are visual targets, not a complete audit. Base body 19px, session state 36px, display 43–59px. Touch targets are at least 64px; Start is 410px. Large text uses 28px body copy with reflow and scrolling. Eye animation responds to simulated speech state and stops when reduced motion is preferred.</p>
       </section>
       <section className="iris-handoff-section">
         <h3>What is simulated</h3>
@@ -126,18 +126,21 @@ function IrisOrb({ state }: { state: 'Listening' | 'Thinking' | 'Speaking' }) {
   return (
     <div className={`iris-orb iris-orb-${state.toLowerCase()}`} aria-hidden="true">
       <svg className="iris-orb-grid" viewBox="0 0 240 240" focusable="false">
-        <circle className="orb-ring orb-ring-outer" cx="120" cy="120" r="88" />
-        <circle className="orb-ring orb-ring-inner" cx="120" cy="120" r="68" />
-        <ellipse className="orb-gridline" cx="120" cy="120" rx="35" ry="88" />
-        <ellipse className="orb-gridline" cx="120" cy="120" rx="59" ry="88" />
-        <path className="orb-gridline" d="M42 91 C84 109 156 109 198 91" />
-        <path className="orb-gridline" d="M33 120 C78 139 162 139 207 120" />
-        <path className="orb-gridline" d="M42 149 C84 131 156 131 198 149" />
-        <circle className="orb-node" cx="120" cy="32" r="3" />
-        <circle className="orb-node" cx="208" cy="120" r="3" />
-        <circle className="orb-node" cx="120" cy="208" r="3" />
-        <circle className="orb-node" cx="32" cy="120" r="3" />
-        <circle className="orb-core" cx="120" cy="120" r="14" />
+        <circle className="orb-aura" cx="120" cy="120" r="98" />
+        <g className="orb-eye">
+          <path className="orb-eye-outline" d="M20 120 Q120 14 220 120 Q120 226 20 120Z" />
+          <path className="orb-eye-lid" d="M20 120 Q120 4 220 120" />
+          <g className="orb-iris">
+            <circle className="orb-ring orb-ring-outer" cx="120" cy="120" r="48" />
+            <circle className="orb-ring orb-ring-inner" cx="120" cy="120" r="37" />
+            {Array.from({ length: 40 }, (_, index) => (
+              <path key={index} className="orb-ray" d="M120 74 L120 91" transform={`rotate(${index * 9} 120 120)`} />
+            ))}
+            <circle className="orb-pupil" cx="120" cy="120" r="23" />
+            <circle className="orb-core" cx="120" cy="120" r="10" />
+            <circle className="orb-glint" cx="109" cy="108" r="5" />
+          </g>
+        </g>
       </svg>
     </div>
   );
@@ -423,10 +426,19 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
       <IrisOrb state={sessionState} />
       {renderHandoffTrigger('captions')}
       <div className="iris-state-label" aria-live="polite">{sessionState}</div>
-      <button className="iris-session-major" onClick={answerWithVoice} disabled={sessionState === 'Thinking'} aria-label={`Voice action, ${sessionState === 'Listening' ? 'start listening' : sessionState === 'Thinking' ? 'thinking' : 'simulate response'}`}>
-        <Icon>{sessionState === 'Listening' ? '◖' : 'Ⅱ'}</Icon>
-        {sessionState === 'Listening' ? 'Talk to Iris' : 'Continue with Iris'}
-      </button>
+      <div className="iris-voice-control">
+        {sessionState === 'Listening' ? (
+          <>
+            <button className="iris-session-major" onClick={answerWithVoice} aria-label="Speak to Iris. Simulate a voice question">
+              <svg viewBox="0 0 32 32" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" aria-hidden="true">
+                <rect x="11" y="3" width="10" height="17" rx="5" />
+                <path d="M6 15v1a10 10 0 0 0 20 0v-1M16 26v4M11 30h10" />
+              </svg>
+            </button>
+            <span className="iris-call-hint">Your turn · tap to speak</span>
+          </>
+        ) : <span className="iris-call-hint">{sessionState === 'Speaking' ? 'Iris is speaking. Just listen.' : 'A moment to think…'}</span>}
+      </div>
       <button className="iris-camera-thumb" onClick={enterCamera} aria-label="Page camera preview, open camera coaching">
         <span className="iris-thumb-page" aria-hidden="true" />
         <span className="iris-thumb-copy">Page camera<span className="button-note">Open coaching</span></span>
