@@ -263,48 +263,63 @@
   opacity:.72;
   animation:orb-halo 4.6s ease-in-out infinite;
 }
-.iris-orb-grid {
-  width:100%;
-  height:100%;
-  overflow:visible;
-  filter:drop-shadow(0 0 9px rgba(var(--iris-accent-rgb),.45));
-  transform-origin:center;
+.iris-orb-body {
+  position:relative;
+  width:158px;
+  height:158px;
+  border-radius:50%;
+  background:radial-gradient(ellipse at 35% 28%,rgba(255,222,239,.5),transparent 52%),
+    radial-gradient(ellipse at 65% 70%,rgba(255,140,200,.55),rgba(255,172,214,.08) 67%,transparent 75%);
+  box-shadow:inset 0 0 30px rgba(var(--iris-accent-rgb),.18),0 0 36px rgba(var(--iris-accent-rgb),.2);
+  animation:orb-breathe 4.8s ease-in-out infinite;
 }
-.orb-ring,.orb-ray {
-  fill:none;
-  stroke:var(--iris-yellow);
-  stroke-width:1.5;
-  vector-effect:non-scaling-stroke;
+.iris-orb-membrane {
+  position:absolute;
+  inset:0;
+  border:1.5px solid rgba(var(--iris-accent-rgb),.8);
+  border-radius:44% 56% 54% 46% / 49% 43% 57% 51%;
+  box-shadow:inset 0 0 15px rgba(var(--iris-accent-rgb),.15),0 0 13px rgba(var(--iris-accent-rgb),.24);
+  animation:orb-flow 9s ease-in-out infinite;
 }
-.orb-ring-outer { opacity:1; stroke-width:2.5; }
-.orb-ring-inner { opacity:.6; stroke-dasharray:1 4; }
-.orb-ray { opacity:.75; }
-.orb-aura { fill:none;stroke:var(--iris-accent);stroke-width:.7;stroke-dasharray:1 8;opacity:.38; }
-.orb-eye-outline { fill:rgba(var(--iris-accent-rgb),.045);stroke:var(--iris-accent);stroke-width:2.5; }
-.orb-eye-lid { fill:none;stroke:var(--iris-accent);stroke-width:1;opacity:.35; }
-.orb-pupil { fill:var(--iris-bg);stroke:var(--iris-accent);stroke-width:1.5; }
-.orb-glint { fill:#fff;opacity:.95; }
-.orb-eye,.orb-iris { transform-origin:120px 120px; }
-.orb-core { fill:var(--iris-yellow); filter:drop-shadow(0 0 7px rgba(var(--iris-accent-rgb),.7)); transform-box:fill-box; transform-origin:center; }
-.iris-orb-listening .iris-orb-grid { animation:orb-listening-breath 4.8s ease-in-out infinite; }
-.iris-orb-listening .orb-iris { animation:orb-gaze 8s ease-in-out infinite; }
-.iris-orb-listening .orb-core { animation:orb-listen 2.8s ease-in-out infinite; }
-.iris-orb-thinking .iris-orb-grid { animation:orb-think 8s ease-in-out infinite; }
-.iris-orb-thinking .orb-core { animation:orb-think-core 1.2s ease-in-out infinite alternate; }
-.iris-orb-speaking .iris-orb-grid { animation:orb-speak 1.7s ease-in-out infinite; }
-.iris-orb-speaking .orb-eye { animation:orb-voice-wobble 1.3s ease-in-out infinite; }
-.iris-orb-speaking::before { animation:orb-speaking-halo 1.3s ease-in-out infinite; }
-.iris-orb-speaking .orb-core { animation:orb-speak-core 1.1s ease-in-out infinite alternate; }
+.membrane-two { inset:6px -4px -3px 5px;opacity:.6;animation-direction:reverse;animation-delay:-3s; }
+.membrane-three { inset:-5px 4px 4px -3px;opacity:.35;animation-delay:-6s; }
+.iris-orb-cloud {
+  position:absolute;
+  inset:19%;
+  border-radius:42% 58% 60% 40%;
+  background:conic-gradient(from 30deg,rgba(255,224,241,.65),rgba(255,172,214,.05),rgba(255,149,205,.7),rgba(255,224,241,.65));
+  filter:blur(17px);
+  animation:orb-cloud-turn 16s linear infinite;
+}
+.iris-orb-thinking .iris-orb-body { animation:orb-thought 2.8s ease-in-out infinite; }
+.iris-orb-thinking .iris-orb-membrane { animation-duration:4s; }
+.iris-orb-speaking .iris-orb-body { animation:orb-heartbeat 1.8s ease-in-out infinite; }
+.iris-orb-speaking .iris-orb-membrane { animation-duration:2.7s; }
+.iris-orb-speaking .iris-orb-cloud { animation-duration:5s; }
+.iris-orb-speaking::before { animation:orb-speaking-halo 1.8s ease-in-out infinite; }
 @keyframes orb-halo { 50% { opacity:1; transform:scale(1.08); } }
-@keyframes orb-listening-breath { 50% { transform:scale(1.035); } }
-@keyframes orb-gaze { 0%,40%,100% { transform:translateX(0); } 50%,65% { transform:translateX(3px); } 80% { transform:translateX(-2px); } }
-@keyframes orb-voice-wobble { 0%,100% { transform:scale(1,1) rotate(-1deg); } 30% { transform:scale(1.025,.94) rotate(1deg); } 65% { transform:scale(.98,1.07) rotate(-.7deg); } }
-@keyframes orb-speaking-halo { 0%,100% { opacity:.65; transform:scale(.95); } 35% { opacity:1; transform:scale(1.16); } 70% { opacity:.8; transform:scale(1.04); } }
-@keyframes orb-think { 50% { transform:rotate(8deg) scale(.96); opacity:.82; } }
-@keyframes orb-think-core { to { transform:scale(.7); opacity:.62; } }
-@keyframes orb-speak { 50% { transform:scale(1.045); } }
-@keyframes orb-speak-core { to { transform:scale(1.45); opacity:.8; } }
-@keyframes orb-listen { 50% { transform:scale(1.24); opacity:.78; } }
+@keyframes orb-breathe { 0%,100% { transform:scale(.95); } 50% { transform:scale(1.055); } }
+@keyframes orb-flow {
+  0%,100% { border-radius:44% 56% 54% 46% / 49% 43% 57% 51%;transform:rotate(0deg); }
+  33% { border-radius:58% 42% 43% 57% / 40% 56% 44% 60%;transform:rotate(28deg); }
+  66% { border-radius:48% 52% 59% 41% / 57% 45% 55% 43%;transform:rotate(-18deg); }
+}
+@keyframes orb-cloud-turn { to { transform:rotate(360deg); } }
+@keyframes orb-thought { 50% { transform:scale(.92) rotate(9deg);opacity:.8; } }
+@keyframes orb-heartbeat {
+  0%,100% { transform:scale(.96); }
+  16% { transform:scale(1.10,1.07); }
+  31% { transform:scale(.99,1.01); }
+  46% { transform:scale(1.055,1.09); }
+  70% { transform:scale(.98); }
+}
+@keyframes orb-speaking-halo {
+  0%,100% { opacity:.55;transform:scale(.94); }
+  16% { opacity:1;transform:scale(1.18); }
+  31% { opacity:.7;transform:scale(1); }
+  46% { opacity:.95;transform:scale(1.12); }
+  70% { opacity:.6;transform:scale(.98); }
+}
 .iris-glass-trigger {
   min-height:74px;
   width:100%;

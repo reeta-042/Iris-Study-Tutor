@@ -112,7 +112,7 @@ function AccessibilityNotes({
       </section>
       <section className="iris-handoff-section">
         <h3>Contrast and type</h3>
-        <p>White and pale pink on deep navy; deep navy on pink actions. Contrast figures are visual targets, not a complete audit. Base body 19px, session state 36px, display 43–59px. Touch targets are at least 64px; Start is 410px. Large text uses 28px body copy with reflow and scrolling. Eye animation responds to simulated speech state and stops when reduced motion is preferred.</p>
+        <p>White and pale pink on deep navy; deep navy on pink actions. Contrast figures are visual targets, not a complete audit. Base body 19px, session state 36px, display 43–59px. Touch targets are at least 64px; Start is 410px. Large text uses 28px body copy with reflow and scrolling. The abstract orb breathes while listening and pulses during simulated speech; animation stops when reduced motion is preferred.</p>
       </section>
       <section className="iris-handoff-section">
         <h3>What is simulated</h3>
@@ -125,23 +125,12 @@ function AccessibilityNotes({
 function IrisOrb({ state }: { state: 'Listening' | 'Thinking' | 'Speaking' }) {
   return (
     <div className={`iris-orb iris-orb-${state.toLowerCase()}`} aria-hidden="true">
-      <svg className="iris-orb-grid" viewBox="0 0 240 240" focusable="false">
-        <circle className="orb-aura" cx="120" cy="120" r="98" />
-        <g className="orb-eye">
-          <path className="orb-eye-outline" d="M20 120 Q120 14 220 120 Q120 226 20 120Z" />
-          <path className="orb-eye-lid" d="M20 120 Q120 4 220 120" />
-          <g className="orb-iris">
-            <circle className="orb-ring orb-ring-outer" cx="120" cy="120" r="48" />
-            <circle className="orb-ring orb-ring-inner" cx="120" cy="120" r="37" />
-            {Array.from({ length: 40 }, (_, index) => (
-              <path key={index} className="orb-ray" d="M120 74 L120 91" transform={`rotate(${index * 9} 120 120)`} />
-            ))}
-            <circle className="orb-pupil" cx="120" cy="120" r="23" />
-            <circle className="orb-core" cx="120" cy="120" r="10" />
-            <circle className="orb-glint" cx="109" cy="108" r="5" />
-          </g>
-        </g>
-      </svg>
+      <div className="iris-orb-body">
+        <span className="iris-orb-membrane membrane-one" />
+        <span className="iris-orb-membrane membrane-two" />
+        <span className="iris-orb-membrane membrane-three" />
+        <span className="iris-orb-cloud" />
+      </div>
     </div>
   );
 }
