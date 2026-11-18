@@ -291,6 +291,40 @@
   filter:blur(17px);
   animation:orb-cloud-turn 16s linear infinite;
 }
+.iris-orb-listening .iris-orb-body { animation:orb-listening-morph 12s ease-in-out infinite; }
+.iris-listening-eye {
+  position:absolute;
+  width:220px;
+  height:140px;
+  overflow:visible;
+  opacity:0;
+  filter:drop-shadow(0 0 12px rgba(var(--iris-accent-rgb),.5));
+  animation:orb-eye-reveal 12s ease-in-out infinite;
+}
+.iris-eye-contour { fill:rgba(var(--iris-accent-rgb),.08);stroke:var(--iris-accent);stroke-width:2; }
+.iris-eye-iris { fill:rgba(var(--iris-accent-rgb),.24);stroke:var(--iris-accent);stroke-width:2; }
+.iris-eye-pupil { fill:var(--iris-bg); }
+.iris-eye-highlight { fill:#fff;opacity:.9; }
+.iris-eye-look { animation:orb-eye-look 12s ease-in-out infinite; }
+@keyframes orb-listening-morph {
+  0%,18%,76%,100% { transform:scale(.96);opacity:1;border-radius:50%; }
+  26% { transform:scale(1.05);opacity:1;border-radius:50%; }
+  34% { transform:scale(1.18,.66);opacity:.2;border-radius:48%; }
+  39%,57% { transform:scale(1.2,.55);opacity:0;border-radius:48%; }
+  65% { transform:scale(1.15,.68);opacity:.25;border-radius:48%; }
+  86% { transform:scale(1.05);opacity:1;border-radius:50%; }
+}
+@keyframes orb-eye-reveal {
+  0%,27%,73%,100% { opacity:0;transform:scale(.72,.35); }
+  36% { opacity:1;transform:scale(1.07,1.04); }
+  42%,58% { opacity:1;transform:scale(1); }
+  65% { opacity:.45;transform:scale(.9,.7); }
+}
+@keyframes orb-eye-look {
+  0%,40%,61%,100% { transform:translate(0,0); }
+  46%,49% { transform:translate(7px,-2px); }
+  54%,57% { transform:translate(-5px,1px); }
+}
 .iris-orb-thinking .iris-orb-body { animation:orb-thought 2.8s ease-in-out infinite; }
 .iris-orb-thinking .iris-orb-membrane { animation-duration:4s; }
 .iris-orb-speaking .iris-orb-body { animation:orb-heartbeat 1.8s ease-in-out infinite; }

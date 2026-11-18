@@ -112,7 +112,7 @@ function AccessibilityNotes({
       </section>
       <section className="iris-handoff-section">
         <h3>Contrast and type</h3>
-        <p>White and pale pink on deep navy; deep navy on pink actions. Contrast figures are visual targets, not a complete audit. Base body 19px, session state 36px, display 43–59px. Touch targets are at least 64px; Start is 410px. Large text uses 28px body copy with reflow and scrolling. The abstract orb breathes while listening and pulses during simulated speech; animation stops when reduced motion is preferred.</p>
+        <p>White and pale pink on deep navy; deep navy on pink actions. Contrast figures are visual targets, not a complete audit. Base body 19px, session state 36px, display 43–59px. Touch targets are at least 64px; Start is 410px. Large text uses 28px body copy with reflow and scrolling. The default orb breathes and pulses during simulated speech. While listening, it briefly becomes a looking eye after a few seconds, then returns to the orb. Reduced motion keeps the orb still.</p>
       </section>
       <section className="iris-handoff-section">
         <h3>What is simulated</h3>
@@ -131,6 +131,16 @@ function IrisOrb({ state }: { state: 'Listening' | 'Thinking' | 'Speaking' }) {
         <span className="iris-orb-membrane membrane-three" />
         <span className="iris-orb-cloud" />
       </div>
+      {state === 'Listening' && (
+        <svg className="iris-listening-eye" viewBox="0 0 220 140" focusable="false">
+          <path className="iris-eye-contour" d="M12 70 Q110 -19 208 70 Q110 159 12 70Z" />
+          <g className="iris-eye-look">
+            <circle className="iris-eye-iris" cx="110" cy="70" r="32" />
+            <circle className="iris-eye-pupil" cx="110" cy="70" r="16" />
+            <circle className="iris-eye-highlight" cx="101" cy="60" r="5" />
+          </g>
+        </svg>
+      )}
     </div>
   );
 }
