@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import '../_group.css';
 
 type Entry = 'welcome' | 'session' | 'camera' | 'notes' | 'quiz' | 'contrast' | 'large';
@@ -23,7 +23,25 @@ function Icon({ children }: { children: string }) {
   return <span className="iris-icon" aria-hidden="true">{children}</span>;
 }
 
-function Annotations({ entry }: { entry: Entry }) {
+function AccessibilityNotes({
+  entry,
+  screen,
+  sessionState,
+  greetingStep,
+  options,
+  cameraStep,
+  answer,
+  questionIndex,
+}: {
+  entry: Entry;
+  screen: Screen;
+  sessionState: 'Listening' | 'Thinking' | 'Speaking';
+  greetingStep: 'asking' | 'confirm' | 'welcomed';
+  options: string[];
+  cameraStep: 'align' | 'captured' | 'thinking' | 'response';
+  answer: number | null;
+  questionIndex: number;
+}) {
   const cues = entry === 'welcome'
     ? 'Start: rising tone + one short pulse; tutor asks the name; confirmation repeats the name with two short pulses.'
     : entry === 'camera'
@@ -33,35 +51,95 @@ function Annotations({ entry }: { entry: Entry }) {
         : entry === 'quiz'
           ? 'Read question and A–D options in order; correct: rising tone + one pulse; incorrect: neutral tone + two pulses. Timer is silent unless requested.'
           : 'Listening: soft rising tone + one pulse; Thinking: no repeating cues; Speaking: soft falling tone; End: two long pulses.';
-  const focusLines = entry === 'welcome'
-    ? ['Start — “Start. Begin study and tell Iris your name by voice”', 'Say my name — simulated “Amaka”', 'Type your name — optional local fallback', 'Continue / Yes, that’s right — confirm name']
-    : entry === 'camera'
-      ? ['Back to session', 'Page is aligned']
-      : entry === 'notes'
-        ? ['Back to session', 'Choose a local notes file', 'Use demo notes', 'Explain', 'Key points', 'Quiz me']
-        : entry === 'quiz'
-          ? ['End quiz', 'Pause timer', 'Add 30 seconds', 'Options A, B, C, D', 'Retry this question', 'Next question (disabled until answered)']
-          : ['Voice action — initial state: Speaking', 'Page camera preview', 'Live captions — collapsed', 'Add notes', 'End study session'];
-  const labels = entry === 'welcome'
-    ? ['“Start. Begin study and tell Iris your name by voice”']
-    : entry === 'camera'
-      ? ['“Return to study session”', '“Page is aligned”']
-      : entry === 'notes'
-        ? ['“Return to study session”', '“Choose a local notes file”', '“Use demo notes”', '“Explain”', '“Key points”', '“Quiz me”']
-        : entry === 'quiz'
-          ? ['“End quiz and return to session”', '“Pause timer”', '“Extend timer by 30 seconds”', '“Option A, Ribosome”', '“Option B, Mitochondrion”', '“Option C, Golgi apparatus”', '“Option D, Cell membrane”', '“Retry this question”', '“Next question” (unavailable until answered)']
-          : ['“Voice action, simulate response”', '“Page camera preview, open camera coaching”', '“Live captions, expand”', '“Add notes”', '“End study session”'];
+  let focusLines: string[];
+  let labels: string[];
+  if (screen === 'welcome') {
+    focusLines = ['Start', 'Accessibility and prototype notes'];
+    labels = ['“Start. Begin study and tell Iris your name by voice”', '“Accessibility and prototype notes, open”'];
+  } else if (screen === 'greeting' && greetingStep === 'asking') {
+    focusLines = ['Say my name', 'Type your name', 'Accessibility and prototype notes'];
+    labels = ['“Use simulated voice to say Amaka”', '“Type your name”', '“Continue with typed name” (available after typing)', '“Accessibility and prototype notes, open”'];
+  } else if (screen === 'greeting' && greetingStep === 'confirm') {
+    focusLines = ['Yes, that’s right', 'Edit your name', 'Accessibility and prototype notes'];
+    labels = ['“Yes, that’s right”', '“Edit your name”', '“Accessibility and prototype notes, open”'];
+  } else if (screen === 'greeting') {
+    focusLines = ['Start a study session', 'Edit name', 'Accessibility and prototype notes'];
+    labels = ['“Start a study session”', '“Edit name”', '“Accessibility and prototype notes, open”'];
+  } else if (screen === 'session') {
+    focusLines = ['Live captions and accessibility notes', ...(sessionState === 'Thinking' ? [] : ['Voice action']), 'Page camera preview', 'Add notes', 'End'];
+    labels = ['“Live captions and accessibility notes, open”', `“Voice action, ${sessionState === 'Listening' ? 'start listening' : sessionState === 'Thinking' ? 'thinking' : 'simulate response'}”`, '“Page camera preview, open camera coaching”', '“Add notes”', '“End study session”'];
+  } else if (screen === 'camera') {
+    const cameraActions = cameraStep === 'align'
+      ? ['Page is aligned']
+      : cameraStep === 'response'
+        ? ['Return to study session', 'Try another page']
+        : ['Return to session'];
+    focusLines = ['Return to study session', ...cameraActions, 'Accessibility and prototype notes'];
+    labels = ['“Return to study session”', ...cameraActions.map((action) => `“${action}”`), '“Accessibility and prototype notes, open”'];
+  } else if (screen === 'notes') {
+    focusLines = ['Return to study session', 'Choose a local notes file', 'Use demo notes', 'Explain', 'Key points', 'Quiz me', 'Accessibility and prototype notes'];
+    labels = ['“Return to study session”', '“Choose a local notes file”', '“Use demo notes”', '“Explain”', '“Key points”', '“Quiz me”', '“Accessibility and prototype notes, open”'];
+  } else if (screen === 'quiz') {
+    const nextLabel = questionIndex >= quizQuestions.length - 1 ? 'Finish quiz and repeat' : 'Next question';
+    const nextAction = answer === null ? [] : [nextLabel];
+    focusLines = ['End quiz', 'Pause or resume timer', 'Extend timer', ...options.map((option, index) => `Option ${String.fromCharCode(65 + index)}`), 'Retry this question', ...nextAction, 'Accessibility and prototype notes'];
+    labels = ['“End quiz and return to session”', '“Pause timer” or “Resume timer”', '“Extend timer by 30 seconds”', ...options.map((option, index) => `“Option ${String.fromCharCode(65 + index)}, ${option}”`), '“Retry this question”', ...(answer === null ? ['“Next question” unavailable until answered'] : [`“${nextLabel}”`]), '“Accessibility and prototype notes, open”'];
+  } else if (screen === 'ended') {
+    focusLines = ['Back to welcome', 'Accessibility and prototype notes'];
+    labels = ['“Back to welcome”', '“Accessibility and prototype notes, open”'];
+  } else {
+    focusLines = ['Accessibility and prototype notes'];
+    labels = ['“Accessibility and prototype notes, open”'];
+  }
 
   return (
-    <aside className="iris-annotation" aria-label="Prototype accessibility and simulation notes">
-      <h2>Dev handoff · {entry === 'contrast' ? 'high contrast' : entry === 'large' ? 'large text' : entry}</h2>
-      <p><strong>Focus order</strong> {focusLines.map((line, index) => `${index + 1}. ${line}`).join('  ·  ')}</p>
-      <p><strong>Exact initial screen-reader labels</strong> {labels.join(' · ')}. Labels that describe state update when the state changes.</p>
-      <p><strong>Announcements</strong> Simulated tutor transcript, listening/thinking/speaking state, answer feedback, file selection and capture result are polite live announcements. Errors and answer correctness are assertive.</p>
-      <p><strong>Audio & haptics specification</strong> {cues} These are native implementation requirements, not active audio. No audio starts before a user gesture. Voice and spoken options are transcript simulations. Only quiz vibration is attempted in this browser; other haptics are specified, not implemented.</p>
-      <p className="annotation-meta"><strong>Contrast & metrics</strong> App text: near-white on near-black (&gt;15:1), yellow #FFD400 on black (&gt;13:1), black on yellow (&gt;13:1). High-contrast variant is true black/white plus yellow. Base body 19px, status 36px, display 43–59px; interactive targets 64px minimum (main Start 410px). Large-text session uses 28px body text and reflows with internal scrolling. Text contrast targets AAA; this is not a complete accessibility audit.</p>
-      <p><strong>Simulation notes</strong> Name “Amaka”, study transcript, notes and quiz are local demo content. Selecting a demo file creates a filename chip only. File picker stays on device; no file content is read or uploaded. Camera sample page is CSS artwork, not a camera preview.</p>
-    </aside>
+    <div className="iris-handoff-scroll">
+      <section className="iris-handoff-section">
+        <h3>Focus order</h3>
+        <ol>{focusLines.map((line) => <li key={line}>{line}</li>)}</ol>
+      </section>
+      <section className="iris-handoff-section">
+        <h3>Screen reader labels</h3>
+        <p>{labels.join(' · ')}. Labels update with state.</p>
+      </section>
+      <section className="iris-handoff-section">
+        <h3>Announcements</h3>
+        <p>Tutor transcript, listening/thinking/speaking state, file selection and capture results are announced politely. Answer feedback is announced assertively and states correctness in words, not color alone.</p>
+      </section>
+      <section className="iris-handoff-section">
+        <h3>Audio and haptics</h3>
+        <p>{cues} This is the native behavior specification, not active audio. Nothing plays before a user gesture. Voice and spoken options are transcript simulations. Only quiz vibration is attempted in this browser; other haptics are specified, not implemented.</p>
+      </section>
+      <section className="iris-handoff-section">
+        <h3>Contrast and type</h3>
+        <p>Near-white on near-black; #FFD400 on black; black on yellow. Contrast figures are visual targets, not a complete audit. Base body 19px, session state 36px, display 43–59px. Touch targets are at least 64px; Start is 410px. Large text uses 28px body copy with reflow and scrolling.</p>
+      </section>
+      <section className="iris-handoff-section">
+        <h3>What is simulated</h3>
+        <p>Name “Amaka”, tutor content, notes and quiz are local demo content. The demo-file chip shows a filename only. The local picker never reads or uploads files. Camera page art is CSS, not a camera feed. No AI, microphone, camera or speech service is connected.</p>
+      </section>
+    </div>
+  );
+}
+
+function IrisOrb({ state }: { state: 'Listening' | 'Thinking' | 'Speaking' }) {
+  return (
+    <div className={`iris-orb iris-orb-${state.toLowerCase()}`} aria-hidden="true">
+      <svg className="iris-orb-grid" viewBox="0 0 240 240" focusable="false">
+        <circle className="orb-ring orb-ring-outer" cx="120" cy="120" r="88" />
+        <circle className="orb-ring orb-ring-inner" cx="120" cy="120" r="68" />
+        <ellipse className="orb-gridline" cx="120" cy="120" rx="35" ry="88" />
+        <ellipse className="orb-gridline" cx="120" cy="120" rx="59" ry="88" />
+        <path className="orb-gridline" d="M42 91 C84 109 156 109 198 91" />
+        <path className="orb-gridline" d="M33 120 C78 139 162 139 207 120" />
+        <path className="orb-gridline" d="M42 149 C84 131 156 131 198 149" />
+        <circle className="orb-node" cx="120" cy="32" r="3" />
+        <circle className="orb-node" cx="208" cy="120" r="3" />
+        <circle className="orb-node" cx="120" cy="208" r="3" />
+        <circle className="orb-node" cx="32" cy="120" r="3" />
+        <circle className="orb-core" cx="120" cy="120" r="14" />
+      </svg>
+    </div>
   );
 }
 
@@ -72,8 +150,9 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
   const [greetingStep, setGreetingStep] = useState<'asking' | 'confirm' | 'welcomed'>('asking');
   const [sessionState, setSessionState] = useState<'Listening' | 'Thinking' | 'Speaking'>('Speaking');
   const [sessionText, setSessionText] = useState('Welcome, Amaka. What would you like to understand today?');
-  const [captionsOpen, setCaptionsOpen] = useState(false);
   const [captionDraft, setCaptionDraft] = useState('');
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetTab, setSheetTab] = useState<'captions' | 'notes'>('captions');
   const [fileName, setFileName] = useState(entry === 'notes' ? 'Cell_structure_week_04.pdf' : '');
   const [notesStatus, setNotesStatus] = useState('');
   const [notesResponse, setNotesResponse] = useState(entry === 'notes' ? 'These notes cover cell structure and the roles of organelles. We can work through them together, one idea at a time.' : '');
@@ -84,6 +163,10 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
   const [seconds, setSeconds] = useState(42);
   const [quizFeedback, setQuizFeedback] = useState('');
   const sessionTimeout = useRef<number | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetTriggerRef = useRef<HTMLButtonElement>(null);
+  const tabButtonsRef = useRef<Array<HTMLButtonElement | null>>([]);
   const currentQuestion = quizQuestions[questionIndex % quizQuestions.length];
 
   useEffect(() => () => {
@@ -98,6 +181,7 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
         if (sessionTimeout.current) window.clearTimeout(sessionTimeout.current);
       };
     }
+    return undefined;
   }, [screen, sessionState]);
 
   useEffect(() => {
@@ -105,6 +189,77 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
     const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [screen, timerPaused, seconds]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (sheetOpen && !dialog.open) {
+      dialog.showModal();
+      window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    } else if (!sheetOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [sheetOpen]);
+
+  const openSheet = (tab: 'captions' | 'notes', trigger: HTMLButtonElement) => {
+    sheetTriggerRef.current = trigger;
+    setSheetTab(tab);
+    setSheetOpen(true);
+  };
+
+  const closeSheet = () => dialogRef.current?.close();
+
+  const onSheetClose = () => {
+    setSheetOpen(false);
+    window.requestAnimationFrame(() => sheetTriggerRef.current?.focus());
+  };
+
+  const onDialogBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
+    if (event.target === dialogRef.current) closeSheet();
+  };
+
+  const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const nextTab = event.key === 'Home'
+      ? 'captions'
+      : event.key === 'End'
+        ? 'notes'
+        : event.key === 'ArrowRight'
+          ? 'notes'
+          : 'captions';
+    const nextIndex = nextTab === 'captions' ? 0 : 1;
+    setSheetTab(nextTab);
+    window.requestAnimationFrame(() => tabButtonsRef.current[nextIndex]?.focus());
+  };
+
+  const submitCaption = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!captionDraft.trim()) return;
+    const message = captionDraft.trim();
+    setSessionText(`You asked: ${message}`);
+    setSessionState('Thinking');
+    setCaptionDraft('');
+    window.setTimeout(() => {
+      setSessionText('Let’s work through that together, one step at a time.');
+      setSessionState('Speaking');
+    }, 900);
+  };
+
+  const renderHandoffTrigger = (tab: 'captions' | 'notes' = 'notes') => (
+    <button
+      ref={sheetTriggerRef}
+      className="iris-glass-trigger"
+      onClick={(event) => openSheet(tab, event.currentTarget)}
+      aria-haspopup="dialog"
+      aria-label={tab === 'captions' ? 'Live captions and accessibility notes, open' : 'Accessibility and prototype notes, open'}
+    >
+      <span className="iris-glass-indicator" aria-hidden="true" />
+      <span>{tab === 'captions' ? 'Live captions' : 'Accessibility notes'}</span>
+      <span className="iris-glass-secondary" aria-live={tab === 'captions' ? 'polite' : undefined}>{tab === 'captions' ? sessionText : 'Focus, labels, and simulation details'}</span>
+      <span className="iris-glass-arrow" aria-hidden="true">›</span>
+    </button>
+  );
 
   const beginSession = () => {
     setScreen('session');
@@ -195,7 +350,6 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
   const resetWelcome = () => {
     setScreen('welcome');
     setGreetingStep('asking');
-    setCaptionsOpen(false);
   };
 
   const renderWelcome = () => (
@@ -209,6 +363,7 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
         <span>Start</span><span className="iris-start-arrow" aria-hidden="true">→</span>
       </button>
       <div className="iris-whisper">Voice first. You are always in control.</div>
+      {renderHandoffTrigger()}
     </div>
   );
 
@@ -255,6 +410,7 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
           )}
         </>
       )}
+      {renderHandoffTrigger()}
     </div>
   );
 
@@ -264,30 +420,18 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
         <div><h1>Study session</h1><p>With Iris · just for you</p></div>
         <span className="iris-session-count">01 / 01</span>
       </div>
-      <div className="iris-visualizer" aria-hidden="true">
-        {Array.from({ length: 9 }, (_, index) => <span className="iris-wave" key={index} />)}
-      </div>
+      <IrisOrb state={sessionState} />
+      {renderHandoffTrigger('captions')}
       <div className="iris-state-label" aria-live="polite">{sessionState}</div>
-      <p className="iris-session-quote" aria-live="polite">{sessionText}</p>
-      <button className="iris-session-major" onClick={answerWithVoice} aria-label={`Voice action, ${sessionState === 'Listening' ? 'start listening' : 'simulate response'}`}>
+      <button className="iris-session-major" onClick={answerWithVoice} disabled={sessionState === 'Thinking'} aria-label={`Voice action, ${sessionState === 'Listening' ? 'start listening' : sessionState === 'Thinking' ? 'thinking' : 'simulate response'}`}>
         <Icon>{sessionState === 'Listening' ? '◖' : 'Ⅱ'}</Icon>
         {sessionState === 'Listening' ? 'Talk to Iris' : 'Continue with Iris'}
       </button>
       <button className="iris-camera-thumb" onClick={enterCamera} aria-label="Page camera preview, open camera coaching">
         <span className="iris-thumb-page" aria-hidden="true" />
-        <span>Page camera <span className="button-note">Open coaching</span></span>
+        <span className="iris-thumb-copy">Page camera<span className="button-note">Open coaching</span></span>
         <span style={{ marginLeft: 'auto', fontSize: 24 }} aria-hidden="true">›</span>
       </button>
-      <button className="iris-caption-toggle" aria-expanded={captionsOpen} onClick={() => setCaptionsOpen((open) => !open)} aria-label={`Live captions, ${captionsOpen ? 'collapse' : 'expand'}`}>
-        <span>Live captions</span><span aria-hidden="true">{captionsOpen ? '−' : '+'}</span>
-      </button>
-      {captionsOpen && <div className="iris-caption-body">
-        <p aria-live="polite">“{sessionText}”</p>
-        <form onSubmit={(event) => { event.preventDefault(); if (captionDraft.trim()) { setSessionText(`You asked: ${captionDraft.trim()}`); setSessionState('Thinking'); setCaptionDraft(''); window.setTimeout(() => { setSessionText('Let’s work through that together, one step at a time.'); setSessionState('Speaking'); }, 900); } }}>
-          <input className="iris-input" value={captionDraft} onChange={(event) => setCaptionDraft(event.target.value)} aria-label="Type a message to Iris" placeholder="Type if you prefer" />
-          <button className="iris-btn compact" type="submit">Send message</button>
-        </form>
-      </div>}
       <div className="iris-footer-actions">
         <button className="iris-btn compact" onClick={() => { setScreen('notes'); setNotesStatus(''); }} aria-label="Add notes">＋ Add notes</button>
         <button className="iris-btn compact subtle" onClick={() => setScreen('ended')} aria-label="End study session">End</button>
@@ -315,6 +459,7 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
           {cameraStep === 'align' ? <button className="iris-btn primary" onClick={simulateAlignment}>Page is aligned</button> : cameraStep === 'response' ? <button className="iris-btn primary" onClick={() => setScreen('session')}>Return to study session</button> : <button className="iris-btn" onClick={() => setScreen('session')}>Return to session</button>}
           {cameraStep === 'response' && <button className="iris-btn compact" onClick={() => { setCameraStep('align'); }}>Try another page</button>}
         </div>
+        {renderHandoffTrigger()}
       </div>
     );
   };
@@ -341,6 +486,7 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
         <button className="iris-btn" onClick={() => explainNotes('Key points')}>Key points</button>
         <button className="iris-btn primary" onClick={() => explainNotes('Quiz me')}>Quiz me</button>
       </div>
+      {renderHandoffTrigger()}
     </div>
   );
 
@@ -369,6 +515,7 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
         <button className="iris-btn compact" onClick={() => { setAnswer(null); setQuizFeedback('Question reset. Choose any option when you are ready.'); }} aria-label="Retry this question">Retry</button>
         <button className="iris-btn primary compact" onClick={nextQuestion} disabled={answer === null} aria-label={questionIndex >= quizQuestions.length - 1 ? 'Finish quiz and repeat' : 'Next question'}>Next question</button>
       </div>
+      {renderHandoffTrigger()}
     </div>
   );
 
@@ -379,6 +526,7 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
       <h1>You did good work, {name || 'Amaka'}.</h1>
       <p>Your session has ended. Take a breath, or start again when you are ready.</p>
       <button className="iris-btn primary" onClick={resetWelcome}>Back to welcome</button>
+      {renderHandoffTrigger()}
     </div>
   );
 
@@ -403,9 +551,125 @@ export function IrisPrototype({ entry }: { entry: Entry }) {
             <span className="iris-top-label">Study together</span>
           </header>
           {body}
+          <dialog
+            ref={dialogRef}
+            className="iris-dialog"
+            aria-modal="true"
+            aria-labelledby="iris-dialog-title"
+            aria-describedby="iris-dialog-description"
+            onClose={onSheetClose}
+            onClick={onDialogBackdropClick}
+          >
+            <div className="iris-sheet">
+              <div className="iris-sheet-handle" aria-hidden="true" />
+              <header className="iris-sheet-header">
+                <div>
+                  <p className="iris-sheet-kicker">IRIS · {entry === 'contrast' ? 'high contrast' : entry === 'large' ? 'large text' : 'study companion'}</p>
+                  <h2 id="iris-dialog-title">{screen === 'session' && sheetTab === 'captions' ? 'Captions & reply' : 'Accessibility notes'}</h2>
+                </div>
+                <button ref={closeButtonRef} className="iris-sheet-close" type="button" onClick={closeSheet} aria-label="Close captions and accessibility notes">Close</button>
+              </header>
+              <p id="iris-dialog-description" className="iris-sheet-description">
+                {screen === 'session' && sheetTab === 'captions' ? 'Read every tutor response or type a message instead of speaking.' : 'Current screen focus, labels, announcements, and simulation details.'}
+              </p>
+              {screen === 'session' && (
+                <div className="iris-sheet-tabs" role="tablist" aria-label="Session support">
+                  <button
+                    ref={(element) => { tabButtonsRef.current[0] = element; }}
+                    className={`iris-sheet-tab ${sheetTab === 'captions' ? 'active' : ''}`}
+                    type="button"
+                    role="tab"
+                    id="iris-tab-captions"
+                    aria-selected={sheetTab === 'captions'}
+                    aria-controls="iris-captions-panel"
+                    tabIndex={sheetTab === 'captions' ? 0 : -1}
+                    onClick={() => setSheetTab('captions')}
+                    onKeyDown={onTabKeyDown}
+                  >Captions</button>
+                  <button
+                    ref={(element) => { tabButtonsRef.current[1] = element; }}
+                    className={`iris-sheet-tab ${sheetTab === 'notes' ? 'active' : ''}`}
+                    type="button"
+                    role="tab"
+                    id="iris-tab-notes"
+                    aria-selected={sheetTab === 'notes'}
+                    aria-controls="iris-notes-panel"
+                    tabIndex={sheetTab === 'notes' ? 0 : -1}
+                    onClick={() => setSheetTab('notes')}
+                    onKeyDown={onTabKeyDown}
+                  >Accessibility notes</button>
+                </div>
+              )}
+              <div className="iris-sheet-body">
+                {screen === 'session' ? (
+                  <>
+                    <section
+                      id="iris-captions-panel"
+                      role="tabpanel"
+                      aria-labelledby="iris-tab-captions"
+                      className="iris-caption-panel"
+                      hidden={sheetTab !== 'captions'}
+                      tabIndex={0}
+                    >
+                      <h3>Live transcript</h3>
+                      <p className="iris-transcript-live" aria-live="polite">{sessionText}</p>
+                      <form className="iris-caption-form" onSubmit={submitCaption}>
+                        <label htmlFor="iris-caption-reply">Type a message to Iris</label>
+                        <input
+                          id="iris-caption-reply"
+                          className="iris-input"
+                          value={captionDraft}
+                          onChange={(event) => setCaptionDraft(event.target.value)}
+                          placeholder="Type if you prefer"
+                        />
+                        <button className="iris-btn primary compact" type="submit">Send message</button>
+                      </form>
+                    </section>
+                    <section
+                      id="iris-notes-panel"
+                      role="tabpanel"
+                      aria-labelledby="iris-tab-notes"
+                      className="iris-accessibility-panel"
+                      hidden={sheetTab !== 'notes'}
+                      tabIndex={0}
+                    >
+                      <AccessibilityNotes
+                        entry={entry}
+                        screen={screen}
+                        sessionState={sessionState}
+                        greetingStep={greetingStep}
+                        options={currentQuestion.options}
+                        cameraStep={cameraStep}
+                        answer={answer}
+                        questionIndex={questionIndex}
+                      />
+                    </section>
+                  </>
+                ) : (
+                  <section
+                    id="iris-accessibility-panel"
+                    role="region"
+                    aria-labelledby="iris-dialog-title"
+                    className="iris-accessibility-panel"
+                    tabIndex={0}
+                  >
+                    <AccessibilityNotes
+                      entry={entry}
+                      screen={screen}
+                      sessionState={sessionState}
+                      greetingStep={greetingStep}
+                      options={currentQuestion.options}
+                      cameraStep={cameraStep}
+                      answer={answer}
+                      questionIndex={questionIndex}
+                    />
+                  </section>
+                )}
+              </div>
+            </div>
+          </dialog>
           <div className="iris-bottom-nav" aria-hidden="true"><div className="iris-nav-pill" /></div>
         </section>
-        <Annotations entry={entry} />
       </div>
     </main>
   );
